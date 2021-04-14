@@ -4,7 +4,36 @@
 
 # 使用
 
-坑
+webpack resolve 引入
+```javascript
+const MultiEnvWebpackPlugin = require('multi-env-webpack-plugin')
+
+const config = {
+  resolve: {
+    plugins: [ 
+      new MultiEnvWebpackPlugin()
+    ]
+  }
+}
+
+```
+
+在需要创建多端文件的地方创建一个 xxx.local.xx 文件
+
+```text
+app.jsx
+app.local.jsx
+```
+
+记得 .gitignore 掉 xxx.local.xxx 文件哦
+
+```text
+*.local.tsx
+*.local.ts
+*.local.jsx
+*.local.js
+```
+
 
 # 原理
 
