@@ -1,25 +1,48 @@
 {
 
   "name": "multi-env-webpack-plugin",
-  "version": "1.0.0",
+
+  "version": "1.0.1",
+
   "main": "index.js",
+
   "devDependencies": {},
+
   "scripts": {
+
     "test": "echo \"Error: no test specified\" && exit 1"
+
   },
+
   "repository": {
+
     "type": "git",
+
     "url": "git+https://github.com/liyatang/multi-env-webpack-plugin.git"
+
   },
+
   "author": "",
+
   "license": "ISC",
+
   "bugs": {
+
     "url": "https://github.com/liyatang/multi-env-webpack-plugin/issues"
+
   },
+
   "homepage": "https://github.com/liyatang/multi-env-webpack-plugin#readme",
+
   "description": "",
+
   "dependencies": {
+
     "fs": "^0.0.1-security",
+
     "path": "^0.12.7"
+
   }
+
 }
+
