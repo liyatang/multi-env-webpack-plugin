@@ -1,18 +1,27 @@
 const path = require('path');
 const fs = require('fs');
 
-// 核心场景是该 路由文件，所以优先 tsx jsx
-const defaultExtArr = ['.tsx', '.jsx', '.ts', '.js'];
+const readDirWithLocal = (dir, env, files = [], localFiles = []) => {
+  const envStr = `.${env}.`
+  const dirInfo = fs.readdirSync(dir);
 
-function resolveEnvFilePath (p, env, extArr = defaultExtArr) {
-  for (let i = 0; i < extArr.length; i++) {
-    const item = extArr[i];
-
-    if (fs.existsSync(`${p}.${env}${item}`)) {
-      return `${p}.${env}${item}`;
+  dirInfo.forEach(item => {
+    const file = path.join(dir, item);
+    const info = fs.statSync(file);
+    if (info.isDirectory()) {
+      readDirWithLocal(file, env, files, localFiles);
+    } else {
+      if (file.includes(envStr)) {
+        localFiles.push(file);
+        files.push(file.replace(envStr, ''))
+      }
     }
-  }
-}
+  });
+
+  return { files, localFiles };
+};
+
+const appPath = fs.realpathSync(process.cwd());
 
 /**
  * MultiEnvWebpackPlugin
@@ -21,7 +30,6 @@ function resolveEnvFilePath (p, env, extArr = defaultExtArr) {
  * @param {string} [target='resolve'] 解析完成后需要触发的钩子。
  * @param {Object} options 插件配置项。
  * @param {string} options.env 环境，默认 local。
- * @param {string[]} options.include 默认忽略 node_modules，如果需要提供 include ，比如 ['@ones-ai']。
  */
 class MultiEnvWebpackPlugin {
   constructor (source = 'described-resolve', target = 'resolve', options) {
@@ -33,6 +41,16 @@ class MultiEnvWebpackPlugin {
       },
       options,
     );
+
+    // 提前扫描好 .env. 文件，提高性能
+    const { files, localFiles } = readDirWithLocal(path.resolve(appPath, './src'), this.options.env)
+
+    this.files = files
+    this.localFiles = localFiles
+
+    if(this.localFiles.length){
+      console.log('MultiEnvWebpackPlugin: find env file', this.localFiles)
+    }
   }
 
   apply (resolver) {
@@ -42,39 +60,25 @@ class MultiEnvWebpackPlugin {
       .tapAsync('MultiEnvWebpackPlugin', (request, resolveContext, callback) => {
         const innerRequest = request.request || request.path;
 
-        // 使用 require.context 的时候 request.directory 为 true
-        if (!innerRequest || request.directory) {
+        // 忽略 node_moduels
+        if (request.path.includes('node_modules')) {
           return callback();
         }
 
-        // 有后缀的忽略，算精准 import 了
-        if (path.extname(innerRequest)) {
+        // 啥来的
+        if (request.request[0] !== '.') {
           return callback();
         }
 
-        let srcRequest;
+        let srcRequest = path.resolve(request.path, request.request);
 
-        if (path.isAbsolute(innerRequest)) {
-          // absolute path
-          srcRequest = innerRequest;
-        } else if (!path.isAbsolute(innerRequest) && /^\./.test(innerRequest)) {
-          // relative path
-          srcRequest = path.resolve(request.path, request.request);
-        } else {
-          return callback();
+        const index = this.files.indexOf(srcRequest)
+        if(index === -1){
+          return callback()
         }
 
-        if (/node_modules/.test(srcRequest) && !this.includes(srcRequest)) {
-          return callback();
-        }
-
-
-        const newRequestStr = resolveEnvFilePath(srcRequest, this.options.env);
-        if (!newRequestStr) {
-          return callback();
-        }
-
-        console.log('MultiEnvWebpackPlugin', srcRequest, newRequestStr)
+        const newRequestStr = this.localFiles[index]
+        console.log('MultiEnvWebpackPlugin:', newRequestStr);
 
         const obj = Object.assign({}, request, {
           request: newRequestStr,
@@ -98,17 +102,6 @@ class MultiEnvWebpackPlugin {
           },
         );
       });
-  }
-
-  includes (filePath) {
-    if (!this.options.include || !this.options.include.length) {
-      return false;
-    }
-
-    filePath = filePath.replace(path.sep, '/');
-    const res = this.options.include.find((item) => filePath.includes(item));
-
-    return !!res;
   }
 }
 

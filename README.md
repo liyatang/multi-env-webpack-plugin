@@ -4,7 +4,7 @@
 
 # 使用
 
-webpack resolve 引入
+webpack resolve plugins 引入
 ```javascript
 const MultiEnvWebpackPlugin = require('multi-env-webpack-plugin')
 
@@ -33,7 +33,6 @@ app.local.jsx
 *.local.jsx
 *.local.js
 ```
-
 
 # 原理
 
